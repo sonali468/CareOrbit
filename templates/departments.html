@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Department - CareOrbit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">CareOrbit</h1>
+                        <span class="ml-4 text-sm text-gray-500">Department Selection</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-600">Welcome, {{ session.username }}</span>
+                        <a href="/logout" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Patient Info Card -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">Patient Information</h2>
+                    <a href="/admin/dashboard" class="text-blue-600 hover:text-blue-800 font-medium">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                    </a>
+                </div>
+                <div class="grid md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="font-medium text-gray-600">Name:</span>
+                        <span class="ml-2" id="patientName">{{ patient.name if patient else 'N/A' }}</span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-600">Phone:</span>
+                        <span class="ml-2" id="patientPhone">{{ patient.contact_number if patient else 'N/A' }}</span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-600">Age:</span>
+                        <span class="ml-2" id="patientAge">{{ patient.age if patient else 'N/A' }} years</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Department Selection -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">Select Department</h3>
+                <div id="departmentList" class="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Departments will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class DepartmentSelection {
+            constructor() {
+                this.patientId = new URLSearchParams(window.location.search).get('patient_id');
+                this.loadDepartments();
+            }
+
+            async loadDepartments() {
+                try {
+                    const response = await fetch('/api/departments');
+                    const departments = await response.json();
+
+                    const departmentList = document.getElementById('departmentList');
+                    departmentList.innerHTML = departments.map(dept => `
+                        <button class="department-btn p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-center"
+                                data-id="${dept._id}" data-name="${dept.department_name}">
+                            <i class="fas fa-stethoscope text-3xl text-blue-600 mb-3"></i>
+                            <div class="font-medium text-lg">${dept.department_name}</div>
+                        </button>
+                    `).join('');
+
+                    // Add event listeners to department buttons
+                    document.querySelectorAll('.department-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            this.selectDepartment(btn.dataset.id, btn.dataset.name);
+                        });
+                    });
+                } catch (error) {
+                    alert('Error loading departments');
+                }
+            }
+
+            selectDepartment(departmentId, departmentName) {
+                // Redirect to doctor selection page
+                window.location.href = `/admin/doctors?patient_id=${this.patientId}&department_id=${departmentId}&department_name=${encodeURIComponent(departmentName)}`;
+            }
+        }
+
+        // Initialize department selection
+        document.addEventListener('DOMContentLoaded', () => {
+            new DepartmentSelection();
+        });
+    </script>
+</body>
+</html>

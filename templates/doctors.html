@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Doctor - CareOrbit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">CareOrbit</h1>
+                        <span class="ml-4 text-sm text-gray-500">Doctor Selection</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-600">Welcome, {{ session.username }}</span>
+                        <a href="/logout" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Patient Info Card -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">Patient Information</h2>
+                    <button onclick="history.back()" class="text-blue-600 hover:text-blue-800 font-medium">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Departments
+                    </button>
+                </div>
+                <div class="grid md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="font-medium text-gray-600">Name:</span>
+                        <span class="ml-2" id="patientName">{{ patient.name if patient else 'N/A' }}</span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-600">Department:</span>
+                        <span class="ml-2" id="departmentName">{{ department_name or 'N/A' }}</span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-600">Phone:</span>
+                        <span class="ml-2" id="patientPhone">{{ patient.contact_number if patient else 'N/A' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Doctor Selection -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">Select Doctor</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialization</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Load</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="doctorsList" class="bg-white divide-y divide-gray-200">
+                            <!-- Doctors will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class DoctorSelection {
+            constructor() {
+                const urlParams = new URLSearchParams(window.location.search);
+                this.patientId = urlParams.get('patient_id');
+                this.departmentId = urlParams.get('department_id');
+                this.departmentName = urlParams.get('department_name');
+                this.loadDoctors();
+            }
+
+            async loadDoctors() {
+                try {
+                    const response = await fetch(`/api/doctors/${this.departmentId}`);
+                    const doctors = await response.json();
+
+                    const doctorsList = document.getElementById('doctorsList');
+                    doctorsList.innerHTML = doctors.map(doctor => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                            <i class="fas fa-user-md text-blue-600"></i>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">${doctor.name}</div>
+                                        <div class="text-sm text-gray-500">ID: ${doctor.doctor_id}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">${doctor.specialization}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                       ${doctor.current_load < 5 ? 'bg-green-100 text-green-800' : 
+                                         doctor.current_load < 10 ? 'bg-yellow-100 text-yellow-800' : 
+                                         'bg-red-100 text-red-800'}">
+                                    ${doctor.current_load} patients
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="assign-btn bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                        data-doctor-id="${doctor._id}" data-doctor-name="${doctor.name}">
+                                    <i class="fas fa-user-plus mr-2"></i>Assign Patient
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    // Add event listeners to assign buttons
+                    document.querySelectorAll('.assign-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            this.assignPatient(btn.dataset.doctorId, btn.dataset.doctorName);
+                        });
+                    });
+                } catch (error) {
+                    alert('Error loading doctors');
+                }
+            }
+
+            async assignPatient(doctorId, doctorName) {
+                try {
+                    const response = await fetch('/api/assign-patient', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            patient_id: this.patientId,
+                            doctor_id: doctorId,
+                            department_id: this.departmentId
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        alert(`Patient assigned to ${doctorName} successfully`);
+                        window.location.href = '/admin/dashboard';
+                    } else {
+                        alert('Assignment failed');
+                    }
+                } catch (error) {
+                    alert('Error assigning patient');
+                }
+            }
+        }
+
+        // Initialize doctor selection
+        document.addEventListener('DOMContentLoaded', () => {
+            new DoctorSelection();
+        });
+    </script>
+</body>
+</html>

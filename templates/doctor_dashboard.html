@@ -1,0 +1,579 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Dashboard - CareOrbit{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Doctor Dashboard</h1>
+                    <p class="text-gray-600">Welcome, {{ doctor_info.name if doctor_info else session.username }} - {{ doctor_info.department if doctor_info else 'Department' }}</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="showFollowUps()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-calendar-alt mr-2"></i>Follow-ups
+                    </button>
+                    <button onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <i class="fas fa-users text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Today's Patients</p>
+                        <p class="text-2xl font-bold text-gray-900" id="todayPatientsCount">{{ patients|length }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <i class="fas fa-check-circle text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Completed</p>
+                        <p class="text-2xl font-bold text-gray-900" id="completedCount">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <i class="fas fa-clock text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Pending</p>
+                        <p class="text-2xl font-bold text-gray-900" id="pendingCount">{{ patients|length }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                        <i class="fas fa-calendar-check text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Follow-ups</p>
+                        <p class="text-2xl font-bold text-gray-900" id="followUpsCount">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patients Table -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-900">Today's Assigned Patients</h2>
+                    <!-- Add small search filter on the right side -->
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="patientFilterInput" placeholder="Filter patients..." 
+                               class="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-48"
+                               onkeyup="filterPatients()">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                {% if patients %}
+                <table class="min-w-full divide-y divide-gray-200" id="patientsTable">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient Info</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visit Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for patient in patients %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                            <i class="fas fa-user text-blue-600"></i>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ patient.patient_details.name }}</div>
+                                        <div class="text-sm text-gray-500">
+                                            {{ patient.patient_details.age }} years • {{ patient.patient_details.gender }}
+                                        </div>
+                                        <div class="text-xs text-gray-400">ID: {{ patient.patient_details.patient_id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ patient.patient_details.contact_number }}</div>
+                                <div class="text-sm text-gray-500">{{ patient.patient_details.address[:30] }}...</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ patient.visit_date.strftime('%I:%M %p') }}</div>
+                                <div class="text-sm text-gray-500">{{ patient.visit_date.strftime('%b %d, %Y') }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ patient.reason_for_visit }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                    {% if patient.status == 'completed' %}bg-green-100 text-green-800
+                                    {% elif patient.status == 'in_progress' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                    {{ patient.status.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-3">
+                                    {% if patient.status == 'completed' %}
+                                        <!-- Fixed history button to pass MongoDB ObjectId instead of patient_id string -->
+                                        <button onclick="viewPatientHistory('{{ patient.patient_details._id }}', '{{ patient.patient_details.name }}')"
+                                                class="inline-flex items-center px-3 py-1 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors">
+                                            <i class="fas fa-history mr-1"></i>History
+                                        </button>
+                                    {% else %}
+                                        <button onclick="openPrescriptionModal('{{ patient._id }}', '{{ patient.patient_details.name }}', '{{ patient.patient_details.patient_id }}', '{{ patient.patient_details.age }}', '{{ patient.patient_details.gender }}', '{{ patient.patient_details.allergies or "None" }}', '{{ patient.patient_details.chronic_conditions or "None" }}')"
+                                                class="inline-flex items-center px-3 py-1 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors">
+                                            <i class="fas fa-prescription-bottle-alt mr-1"></i>Add Prescription
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-12">
+                    <i class="fas fa-user-md text-4xl text-gray-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Patients Today</h3>
+                    <p class="text-gray-500">You don't have any patients assigned for today.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Prescription Modal -->
+<div id="prescriptionModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 id="modalTitle" class="text-lg font-semibold text-gray-900">Add Prescription</h3>
+                    <button onclick="closePrescriptionModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <!-- Patient Info -->
+                <div id="modalPatientInfo" class="mb-6 p-4 bg-gray-50 rounded-lg"></div>
+                
+                <!-- Prescription Form -->
+                <form id="prescriptionForm" class="space-y-6">
+                    <input type="hidden" id="visitId">
+                    <input type="hidden" id="isEditing" value="false">
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Symptoms</label>
+                            <textarea id="symptoms" rows="4" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Describe patient symptoms..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Diagnosis</label>
+                            <textarea id="diagnosis" rows="4" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter diagnosis..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Medications</label>
+                        <textarea id="medications" rows="4" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="List medications with dosage and frequency..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Instructions</label>
+                        <textarea id="instructions" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Additional instructions for patient..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Follow-up Date (Optional)</label>
+                        <input type="date" id="followUpDate" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" onclick="closePrescriptionModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" id="savePrescriptionBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-save mr-2"></i>Save Prescription
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Patient History Modal -->
+<div id="patientHistoryModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 id="historyModalTitle" class="text-lg font-semibold text-gray-900">Patient History</h3>
+                    <button onclick="closePatientHistoryModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="patientHistoryContent" class="p-6"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openPrescriptionModal(visitId, patientName, patientId, patientAge, patientGender, patientAllergies, patientChronic) {
+    // Populate patient info
+    document.getElementById('modalPatientInfo').innerHTML = `
+        <div class="grid md:grid-cols-2 gap-4">
+            <div>
+                <h4 class="font-semibold text-gray-800 mb-2">Patient Information</h4>
+                <p><span class="font-medium">Name:</span> ${patientName}</p>
+                <p><span class="font-medium">ID:</span> ${patientId}</p>
+                <p><span class="font-medium">Age:</span> ${patientAge} years</p>
+                <p><span class="font-medium">Gender:</span> ${patientGender}</p>
+            </div>
+            <div>
+                <h4 class="font-semibold text-gray-800 mb-2">Medical History</h4>
+                <p><span class="font-medium">Allergies:</span> <span class="text-red-600">${patientAllergies}</span></p>
+                <p><span class="font-medium">Chronic Conditions:</span> ${patientChronic}</p>
+            </div>
+        </div>
+    `;
+
+    // Set visit ID
+    document.getElementById('visitId').value = visitId;
+    
+    // Clear form
+    document.getElementById('prescriptionForm').reset();
+    document.getElementById('visitId').value = visitId;
+    
+    // Set minimum follow-up date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('followUpDate').min = tomorrow.toISOString().split('T')[0];
+    
+    // Show modal
+    document.getElementById('prescriptionModal').classList.remove('hidden');
+}
+
+function closePrescriptionModal() {
+    document.getElementById('prescriptionModal').classList.add('hidden');
+}
+
+async function viewPatientHistory(patientId, patientName) {
+    try {
+        const response = await fetch(`/api/patient/${patientId}/history`);
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('historyModalTitle').textContent = `${patientName} - Medical History`;
+            let historyHtml = '';
+            
+            if (data.history.length > 0) {
+                historyHtml = '<div class="space-y-4">';
+                data.history.forEach(visit => {
+                    historyHtml += `
+                        <div class="border rounded-lg p-4">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">${visit.visit_date}</h4>
+                                    <p class="text-sm text-gray-600">Dr. ${visit.doctor_name} - ${visit.department}</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                        ${visit.status}
+                                    </span>
+                                    ${visit.symptoms || visit.diagnosis || visit.medications ? 
+                                        `<button onclick="editPrescription('${visit.visit_id}', '${patientName}', '${patientId}')" 
+                                                class="text-blue-600 hover:text-blue-900 text-xs px-2 py-1 border border-blue-300 rounded">
+                                            <i class="fas fa-edit mr-1"></i>Edit
+                                        </button>
+                                        <button onclick="viewAuditTrail('${visit.visit_id}')" 
+                                                class="text-gray-600 hover:text-gray-900 text-xs px-2 py-1 border border-gray-300 rounded">
+                                            <i class="fas fa-history mr-1"></i>Audit
+                                        </button>` : ''
+                                    }
+                                </div>
+                            </div>
+                            <p class="text-sm mb-2"><strong>Reason:</strong> ${visit.reason_for_visit}</p>
+                            ${visit.symptoms ? `<p class="text-sm mb-2"><strong>Symptoms:</strong> ${visit.symptoms}</p>` : ''}
+                            ${visit.diagnosis ? `<p class="text-sm mb-2"><strong>Diagnosis:</strong> ${visit.diagnosis}</p>` : ''}
+                            ${visit.medications ? `<p class="text-sm mb-2"><strong>Medications:</strong> ${visit.medications}</p>` : ''}
+                            ${visit.instructions ? `<p class="text-sm mb-2"><strong>Instructions:</strong> ${visit.instructions}</p>` : ''}
+                            ${visit.follow_up_date ? `<p class="text-sm"><strong>Follow-up:</strong> ${visit.follow_up_date}</p>` : ''}
+                        </div>
+                    `;
+                });
+                historyHtml += '</div>';
+            } else {
+                historyHtml = '<div class="text-center py-8"><p class="text-gray-500">No previous visits found.</p></div>';
+            }
+            
+            document.getElementById('patientHistoryContent').innerHTML = historyHtml;
+            document.getElementById('patientHistoryModal').classList.remove('hidden');
+        } else {
+            showAlert('Failed to load patient history', 'error');
+        }
+    } catch (error) {
+        showAlert('Error loading patient history', 'error');
+    }
+}
+
+function closePatientHistoryModal() {
+    document.getElementById('patientHistoryModal').classList.add('hidden');
+}
+
+async function logout() {
+    try {
+        const response = await fetch('/api/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        const data = await response.json();
+        if (data.success) {
+            window.location.href = '/';
+        }
+    } catch (error) {
+        showAlert('Error logging out', 'error');
+    }
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+    }`;
+    alertDiv.textContent = message;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+// Handle prescription form submission
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('prescriptionForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const visitId = document.getElementById('visitId').value;
+        const isEditing = document.getElementById('isEditing').value === 'true';
+        
+        const prescriptionData = {
+            visit_id: visitId,
+            symptoms: document.getElementById('symptoms').value,
+            diagnosis: document.getElementById('diagnosis').value,
+            medications: document.getElementById('medications').value,
+            instructions: document.getElementById('instructions').value,
+            follow_up_date: document.getElementById('followUpDate').value
+        };
+        
+        try {
+            const endpoint = isEditing ? '/api/prescription/edit' : '/api/prescription/add';
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(prescriptionData)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert(isEditing ? 'Prescription updated successfully' : 'Prescription added successfully', 'success');
+                closePrescriptionModal();
+                location.reload(); // Refresh to show updated data
+            } else {
+                showAlert(data.message || 'Failed to save prescription', 'error');
+            }
+        } catch (error) {
+            showAlert('Error saving prescription', 'error');
+        }
+    });
+});
+
+function showFollowUps() {
+    showAlert('Follow-ups feature coming soon', 'info');
+}
+
+async function editPrescription(visitId, patientName, patientId) {
+    try {
+        // Close history modal first
+        closePatientHistoryModal();
+        
+        // Fetch existing prescription data
+        const response = await fetch(`/api/patient/${patientId}/history`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const visit = data.history.find(v => v.visit_id === visitId);
+            if (visit) {
+                // Set modal title to indicate editing
+                document.getElementById('modalTitle').textContent = 'Edit Prescription';
+                
+                // Populate patient info
+                document.getElementById('modalPatientInfo').innerHTML = `
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Patient Information</h4>
+                            <p><span class="font-medium">Name:</span> ${patientName}</p>
+                            <p><span class="font-medium">ID:</span> ${patientId}</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-red-600 mb-2">⚠️ EDITING EXISTING PRESCRIPTION</h4>
+                            <p class="text-sm text-red-600">Changes will be logged for audit purposes</p>
+                            <p class="text-sm text-gray-600">Original Date: ${visit.visit_date}</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Populate form with existing data
+                document.getElementById('visitId').value = visitId;
+                document.getElementById('isEditing').value = 'true';
+                document.getElementById('symptoms').value = visit.symptoms || '';
+                document.getElementById('diagnosis').value = visit.diagnosis || '';
+                document.getElementById('medications').value = visit.medications || '';
+                document.getElementById('instructions').value = visit.instructions || '';
+                document.getElementById('followUpDate').value = visit.follow_up_date || '';
+                
+                // Change button text
+                document.getElementById('savePrescriptionBtn').innerHTML = '<i class="fas fa-save mr-2"></i>Update Prescription';
+                
+                // Show modal
+                document.getElementById('prescriptionModal').classList.remove('hidden');
+            }
+        }
+    } catch (error) {
+        showAlert('Error loading prescription data', 'error');
+    }
+}
+
+async function viewAuditTrail(visitId) {
+    try {
+        const response = await fetch(`/api/prescription/${visitId}/audit`);
+        const data = await response.json();
+        
+        if (data.success) {
+            let auditHtml = '<div class="space-y-4">';
+            
+            if (data.audit_history.length > 0) {
+                auditHtml += '<h4 class="font-semibold text-gray-800 mb-4">Prescription Edit History</h4>';
+                data.audit_history.forEach(entry => {
+                    auditHtml += `
+                        <div class="border-l-4 border-yellow-400 pl-4 py-2 bg-yellow-50">
+                            <div class="flex justify-between items-start mb-2">
+                                <p class="font-medium text-gray-800">Edited by Dr. ${entry.doctor_name}</p>
+                                <p class="text-sm text-gray-600">${entry.edited_at}</p>
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <h5 class="font-medium text-red-600 mb-1">Original:</h5>
+                                    <p><strong>Symptoms:</strong> ${entry.original_data.symptoms || 'None'}</p>
+                                    <p><strong>Diagnosis:</strong> ${entry.original_data.diagnosis || 'None'}</p>
+                                    <p><strong>Medications:</strong> ${entry.original_data.medications || 'None'}</p>
+                                </div>
+                                <div>
+                                    <h5 class="font-medium text-green-600 mb-1">Updated:</h5>
+                                    <p><strong>Symptoms:</strong> ${entry.new_data.symptoms || 'None'}</p>
+                                    <p><strong>Diagnosis:</strong> ${entry.new_data.diagnosis || 'None'}</p>
+                                    <p><strong>Medications:</strong> ${entry.new_data.medications || 'None'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                auditHtml += '<p class="text-gray-500">No edit history found for this prescription.</p>';
+            }
+            
+            auditHtml += '</div>';
+            
+            // Show in history modal
+            document.getElementById('patientHistoryContent').innerHTML = auditHtml;
+        } else {
+            showAlert('Failed to load audit trail', 'error');
+        }
+    } catch (error) {
+        showAlert('Error loading audit trail', 'error');
+    }
+}
+
+// Update demographics dynamically
+function updateDemographics() {
+    const patients = {{ patients|tojson if patients else '[]' }};
+    
+    let completedCount = 0;
+    let pendingCount = 0;
+    
+    patients.forEach(patient => {
+        if (patient.status === 'completed') {
+            completedCount++;
+        } else {
+            pendingCount++;
+        }
+    });
+    
+    document.getElementById('completedCount').textContent = completedCount;
+    document.getElementById('pendingCount').textContent = pendingCount;
+    document.getElementById('todayPatientsCount').textContent = patients.length;
+}
+
+// Filter patients dynamically
+function filterPatients() {
+    const filter = document.getElementById('patientFilterInput').value.toUpperCase();
+    const table = document.getElementById('patientsTable');
+    const tr = table.getElementsByTagName('tr');
+    
+    for (let i = 1; i < tr.length; i++) {
+        const td = tr[i].getElementsByTagName('td')[0];
+        if (td) {
+            const txtValue = td.textContent || td.innerText;
+            tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+        }
+    }
+}
+
+// Call on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateDemographics();
+    
+    // Update demographics every 30 seconds
+    setInterval(updateDemographics, 30000);
+});
+</script>
+{% endblock %}
