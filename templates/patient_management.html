@@ -130,7 +130,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient Info</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Demographics</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visits</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Visited</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -152,6 +152,70 @@
                     <span id="pageInfo" class="px-3 py-1 text-sm">Page 1 of 1</span>
                     <button id="nextPage" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50" disabled>
                         Next
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Patient Details Modal -->
+<div id="viewPatientModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-screen overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-800">Patient Details</h3>
+                <button id="closeViewModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <!-- Patient Info Card -->
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-blue-800 mb-3">
+                            <i class="fas fa-user mr-2"></i>Patient Information
+                        </h4>
+                        <div class="space-y-2">
+                            <div><strong>Name:</strong> <span id="viewName"></span></div>
+                            <div><strong>Patient ID:</strong> <span id="viewPatientId"></span></div>
+                            <div><strong>Age:</strong> <span id="viewAge"></span> years</div>
+                            <div><strong>Gender:</strong> <span id="viewGender"></span></div>
+                            <div><strong>Phone:</strong> <span id="viewPhone"></span></div>
+                            <div><strong>Aadhaar:</strong> <span id="viewAadhaar"></span></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Medical Info Card -->
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-green-800 mb-3">
+                            <i class="fas fa-stethoscope mr-2"></i>Medical Information
+                        </h4>
+                        <div class="space-y-2">
+                            <div><strong>Allergies:</strong> <span id="viewAllergies"></span></div>
+                            <div><strong>Chronic Illness:</strong> <span id="viewChronicIllness"></span></div>
+                            <div><strong>Address:</strong> <span id="viewAddress"></span></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visit History -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-history mr-2"></i>Visit History
+                    </h4>
+                    <div id="visitHistoryContainer">
+                        <div class="text-center py-4 text-gray-500">Loading visit history...</div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-4 pt-6 border-t mt-6">
+                    <button id="editFromView" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-edit mr-2"></i>Edit Patient
+                    </button>
+                    <button id="closeViewModalBtn" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        Close
                     </button>
                 </div>
             </div>
@@ -265,7 +329,16 @@ class PatientManagement {
         document.getElementById('prevPage').addEventListener('click', () => this.previousPage());
         document.getElementById('nextPage').addEventListener('click', () => this.nextPage());
         
-        // Modal controls
+        // View modal controls
+        document.getElementById('closeViewModal').addEventListener('click', () => this.closeViewModal());
+        document.getElementById('closeViewModalBtn').addEventListener('click', () => this.closeViewModal());
+        document.getElementById('editFromView').addEventListener('click', () => {
+            const patientId = this.currentPatient._id;
+            this.closeViewModal();
+            this.editPatient(patientId);
+        });
+        
+        // Edit modal controls
         document.getElementById('closeEditModal').addEventListener('click', () => this.closeEditModal());
         document.getElementById('cancelEdit').addEventListener('click', () => this.closeEditModal());
         document.getElementById('editPatientForm').addEventListener('submit', (e) => {
@@ -329,10 +402,13 @@ class PatientManagement {
             const response = await fetch(`/api/patients/list?${params}`);
             const data = await response.json();
             
+            console.log('[v0] Patient data received:', data);
+            
             this.renderPatients(data.patients);
             this.updatePagination(data);
             
         } catch (error) {
+            console.error('[v0] Error loading patients:', error);
             showAlert('Error loading patients', 'error');
         }
     }
@@ -353,12 +429,12 @@ class PatientManagement {
         }
 
         tbody.innerHTML = patients.map(patient => `
-            <tr class="hover:bg-gray-50">
+            <tr class="hover:bg-gray-50 transition-colors">
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 h-10 w-10">
-                            <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                                <i class="fas fa-user text-gray-600"></i>
+                            <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center">
+                                <i class="fas fa-user text-white"></i>
                             </div>
                         </div>
                         <div class="ml-4">
@@ -368,30 +444,48 @@ class PatientManagement {
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${patient.contact_number}</div>
-                    <div class="text-sm text-gray-500">${patient.address.substring(0, 30)}...</div>
+                    <div class="text-sm text-gray-900">
+                        <i class="fas fa-phone text-blue-500 mr-1"></i>${patient.contact_number}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        <i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>${patient.address.substring(0, 30)}...
+                    </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${patient.age || 'N/A'} years</div>
-                    <div class="text-sm text-gray-500">${patient.gender}</div>
+                    <div class="text-sm text-gray-900">
+                        <i class="fas fa-birthday-cake text-purple-500 mr-1"></i>${patient.age || 'N/A'} years
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        <i class="fas fa-venus-mars text-gray-400 mr-1"></i>${patient.gender}
+                    </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        ${patient.visit_count} visits
-                    </span>
+                    <div class="text-sm text-gray-900">
+                        <i class="fas fa-calendar-check text-blue-500 mr-1"></i>${patient.visit_count || 0} visits
+                    </div>
+                    ${patient.last_visit_date ? `
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-clock text-gray-400 mr-1"></i>Last: ${patient.last_visit_date}
+                        </div>
+                    ` : `
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-user-plus text-gray-400 mr-1"></i>First time
+                        </div>
+                    `}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <button class="text-blue-600 hover:text-blue-900" onclick="patientMgmt.editPatient('${patient._id}')">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="text-green-600 hover:text-green-900" onclick="patientMgmt.viewPatient('${patient._id}')">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    ${patient.visit_count === 0 ? `
-                        <button class="text-red-600 hover:text-red-900" onclick="patientMgmt.deletePatient('${patient._id}')">
-                            <i class="fas fa-trash"></i>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex space-x-2">
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-sm transition-all" 
+                                onclick="patientMgmt.viewPatient('${patient._id}')" title="View Patient Details">
+                            Detail
                         </button>
-                    ` : ''}
+                        ${patient.visit_count === 0 ? `
+                            <button class="text-red-600 hover:text-red-900 hover:bg-red-50 p-2 rounded-full transition-all" 
+                                    onclick="patientMgmt.deletePatient('${patient._id}')" title="Delete Patient">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
                 </td>
             </tr>
         `).join('');
@@ -417,6 +511,98 @@ class PatientManagement {
     nextPage() {
         this.currentPage++;
         this.loadPatients();
+    }
+
+    async viewPatient(patientId) {
+        try {
+            const response = await fetch(`/api/patient/${patientId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                this.currentPatient = data.patient;
+                this.populateViewModal(data.patient);
+                await this.loadPatientHistory(patientId);
+                document.getElementById('viewPatientModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            } else {
+                showAlert(data.message, 'error');
+            }
+        } catch (error) {
+            showAlert('Error loading patient details', 'error');
+        }
+    }
+
+    populateViewModal(patient) {
+        document.getElementById('viewName').textContent = patient.name;
+        document.getElementById('viewPatientId').textContent = patient.patient_id;
+        document.getElementById('viewAge').textContent = patient.age || 'N/A';
+        document.getElementById('viewGender').textContent = patient.gender;
+        document.getElementById('viewPhone').textContent = patient.contact_number;
+        document.getElementById('viewAadhaar').textContent = patient.aadhaar_number || 'Not provided';
+        document.getElementById('viewAllergies').textContent = patient.allergies || 'None reported';
+        document.getElementById('viewChronicIllness').textContent = patient.chronic_illness || 'None reported';
+        document.getElementById('viewAddress').textContent = patient.address;
+    }
+
+    async loadPatientHistory(patientId) {
+        try {
+            const response = await fetch(`/api/patient/${patientId}/history`);
+            const data = await response.json();
+            
+            const container = document.getElementById('visitHistoryContainer');
+            
+            if (data.success && data.visits && data.visits.length > 0) {
+                container.innerHTML = data.visits.map(visit => `
+                    <div class="bg-white rounded-lg p-4 mb-3 border border-gray-200">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center">
+                                <i class="fas fa-calendar text-blue-500 mr-2"></i>
+                                <span class="font-medium">${new Date(visit.visit_date_time).toLocaleDateString()}</span>
+                            </div>
+                            <span class="px-2 py-1 text-xs rounded-full ${
+                                visit.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            }">
+                                ${visit.status}
+                            </span>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <strong>Doctor:</strong> ${visit.doctor_name}<br>
+                                <strong>Department:</strong> ${visit.department_name}
+                            </div>
+                            <div>
+                                <strong>Diagnosis:</strong> ${visit.diagnosis || 'Not provided'}<br>
+                                <strong>Follow-up:</strong> ${visit.follow_up_date || 'None scheduled'}
+                            </div>
+                        </div>
+                        ${visit.medications ? `
+                            <div class="mt-2 text-sm">
+                                <strong>Medications:</strong> ${visit.medications}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-calendar-times text-3xl mb-2"></i>
+                        <div>No visit history found</div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            document.getElementById('visitHistoryContainer').innerHTML = `
+                <div class="text-center py-4 text-red-500">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Error loading visit history
+                </div>
+            `;
+        }
+    }
+
+    closeViewModal() {
+        document.getElementById('viewPatientModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        this.currentPatient = null;
     }
 
     async editPatient(patientId) {
@@ -460,6 +646,8 @@ class PatientManagement {
             chronic_illness: document.getElementById('editChronicIllness').value
         };
 
+        console.log('[v0] Updating patient with data:', formData);
+
         try {
             const response = await fetch(`/api/patient/${patientId}/update`, {
                 method: 'PUT',
@@ -470,15 +658,17 @@ class PatientManagement {
             });
 
             const data = await response.json();
+            console.log('[v0] Update response:', data);
 
             if (data.success) {
                 showAlert('Patient updated successfully', 'success');
                 this.closeEditModal();
-                this.loadPatients();
+                this.loadPatients(); // Refresh the patient list
             } else {
-                showAlert(data.message, 'error');
+                showAlert(data.message || 'Error updating patient', 'error');
             }
         } catch (error) {
+            console.error('[v0] Error updating patient:', error);
             showAlert('Error updating patient', 'error');
         }
     }
@@ -487,11 +677,6 @@ class PatientManagement {
         document.getElementById('editPatientModal').classList.add('hidden');
         document.body.style.overflow = 'auto';
         document.getElementById('editPatientForm').reset();
-    }
-
-    async viewPatient(patientId) {
-        // This would open a detailed view modal
-        showAlert('Patient details view - Feature coming soon', 'info');
     }
 
     async deletePatient(patientId) {

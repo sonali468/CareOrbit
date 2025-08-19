@@ -1232,6 +1232,14 @@ def get_patients_list():
             # Get visit count
             visit_count = mongo.db.visit.count_documents({'patient_id': patient['_id']})
             
+            last_visit = mongo.db.visit.find_one(
+                {'patient_id': patient['_id']}, 
+                sort=[('visit_date', -1)]
+            )
+            last_visit_date = None
+            if last_visit and 'visit_date' in last_visit:
+                last_visit_date = last_visit['visit_date'].strftime('%b %d, %Y')
+            
             patient_data = {
                 '_id': str(patient['_id']),
                 'patient_id': patient['patient_id'],
@@ -1240,7 +1248,8 @@ def get_patients_list():
                 'age': age,
                 'gender': patient['gender'],
                 'address': patient['address'],
-                'visit_count': visit_count
+                'visit_count': visit_count,
+                'last_visit_date': last_visit_date  # Added last visit date
             }
             patients_data.append(patient_data)
         
@@ -1272,8 +1281,8 @@ def get_patient_details(patient_id):
                 if today.month < patient['date_of_birth'].month or \
                    (today.month == patient['date_of_birth'].month and today.day < patient['date_of_birth'].day):
                     age -= 1
-                else:
-                    age = 0
+            else:
+                age = 0
         except:
             age = 0
         
@@ -1290,11 +1299,57 @@ def get_patient_details(patient_id):
             'aadhaar_number': patient.get('aadhaar_number', ''),
             'date_of_birth': patient['date_of_birth'].strftime('%Y-%m-%d') if isinstance(patient['date_of_birth'], datetime) else str(patient['date_of_birth'])
         }
+
+        try:
+            visits = list(mongo.db.visit.find(
+                {'patient_id': ObjectId(patient_id)},
+                sort=[('visit_date', -1)]
+            ))
+            
+            visit_history = []
+            for visit in visits:
+                try:
+                    doctor = mongo.db.doctor.find_one({'_id': visit.get('doctor_id')})
+                    department = mongo.db.department.find_one({'_id': visit.get('department_id')})
+
+                    # Handle visit_date safely
+                    visit_date = visit.get('visit_date')
+                    if visit_date:
+                        if isinstance(visit_date, datetime):
+                            visit_date_str = visit_date.strftime('%Y-%m-%d %H:%M')
+                        else:
+                            visit_date_str = str(visit_date)
+                    else:
+                        visit_date_str = 'Date not available'
+
+                    visit_data = {
+                        'visit_id': str(visit['_id']),
+                        'visit_date_time': visit_date_str,
+                        'doctor_name': doctor['name'] if doctor else 'Unknown',
+                        'department_name': department['department_name'] if department else 'Unknown',
+                        'reason_for_visit': visit.get('reason_for_visit', ''),
+                        'status': visit.get('status', ''),
+                        'symptoms': visit.get('symptoms', ''),
+                        'diagnosis': visit.get('diagnosis', ''),
+                        'medications': visit.get('medications', ''),
+                        'instructions': visit.get('instructions', ''),
+                        'follow_up_date': visit['follow_up_date'].strftime('%Y-%m-%d') if visit.get('follow_up_date') else ''
+                    }
+                    visit_history.append(visit_data)
+                except Exception as visit_error:
+                    print(f"Error processing visit: {visit_error}")
+                    continue
+
+        except Exception as visit_history_error:
+            print(f"Error retrieving visit history: {visit_history_error}")
+            visit_history = []
+
+        patient_data['visits'] = visit_history
         
         return jsonify({'success': True, 'patient': patient_data})
         
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        return jsonify({'success': False, 'message': 'Error fetching patient details'})
 
 @app.route('/api/patient/<patient_id>/update', methods=['PUT'])
 @role_required(['admin'])

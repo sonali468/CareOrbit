@@ -30,20 +30,14 @@
         <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
             <h2 class="text-xl font-semibold text-gray-800 mb-6">Patient Check-in</h2>
             
-            <!-- Updated search form to support phone-first workflow -->
+            <!-- Simplified search form to only use phone number -->
             <form id="patientSearchForm" class="space-y-4">
-                <div class="grid md:grid-cols-2 gap-4">
+                <div class="max-w-md mx-auto">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
                         <input type="tel" id="patientPhone" required 
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                placeholder="Enter phone number">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Patient Name (Optional)</label>
-                        <input type="text" id="patientName" 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="Enter patient name (optional)">
                     </div>
                 </div>
                 
@@ -52,95 +46,117 @@
                             class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
                         <i class="fas fa-search mr-2"></i>Search Patients
                     </button>
+                    <!-- Added Register New Patient button to main dashboard -->
+                    <button type="button" id="newPatientBtn"
+                            class="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                        <i class="fas fa-user-plus mr-2"></i>Register New Patient
+                    </button>
                 </div>
             </form>
 
-            <div class="text-center mt-6">
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-white text-gray-500">or</span>
-                    </div>
+            <!-- Search results will be displayed here -->
+            <div id="searchResults" class="mt-6 hidden">
+                <!-- Moved back to dashboard button to the right side, top -->
+                <div class="flex justify-end mb-4">
+                    <button id="backToDashboard" 
+                            class="text-gray-600 hover:text-gray-800 font-medium">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                    </button>
                 </div>
                 
-                <button id="newPatientBtn" 
-                        class="mt-4 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
-                    <i class="fas fa-user-plus mr-2"></i>Register New Patient
-                </button>
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Search Results</h3>
+                    <div id="patientsList"></div>
+                    <!-- Kept only one Register New Patient button in search results -->
+                    <div id="registerOption" class="text-center mt-4">
+                        <button id="registerFromSearch" 
+                                class="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                            <i class="fas fa-user-plus mr-2"></i>Register New Patient
+                        </button>
+                    </div>
+                    <div id="noPatientFound" class="hidden text-center py-8">
+                        <p class="text-gray-600 mb-4">No patient registered with this phone number</p>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Patient Registration Form -->
-        <div id="registrationForm" class="hidden bg-white rounded-xl shadow-lg p-6 mb-8">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-semibold text-gray-800">Register New Patient</h3>
-                <button id="cancelRegBtn" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            
-            <form id="patientRegForm" class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                    <input type="text" id="regName" required 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                    <input type="tel" id="regPhone" required 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Aadhaar Number</label>
-                    <input type="text" id="regAadhaar" 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Date of Birth *</label>
-                    <input type="date" id="regDob" required 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
-                    <select id="regGender" required 
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Address *</label>
-                    <textarea id="regAddress" required rows="3"
-                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Allergies</label>
-                    <textarea id="regAllergies" rows="3"
-                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="List any known allergies"></textarea>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Chronic Illness / Past Surgical History</label>
-                    <textarea id="regChronicIllness" rows="3"
-                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="List chronic conditions or past surgeries"></textarea>
+<!-- Converted registration form to modal popup -->
+<!-- Registration Modal -->
+<div id="registrationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800">Register New Patient</h3>
+                    <button id="closeModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
                 </div>
                 
-                <div class="md:col-span-2 flex justify-end space-x-4">
-                    <button type="button" id="cancelRegBtn2" 
-                            class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                        Cancel
-                    </button>
-                    <button type="submit" 
-                            class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                        <i class="fas fa-save mr-2"></i>Register Patient
-                    </button>
-                </div>
-            </form>
+                <form id="patientRegForm" class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                        <input type="text" id="regName" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                        <input type="tel" id="regPhone" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Aadhaar Number</label>
+                        <input type="text" id="regAadhaar" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date of Birth *</label>
+                        <input type="date" id="regDob" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
+                        <select id="regGender" required 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Address *</label>
+                        <textarea id="regAddress" required rows="3"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Allergies</label>
+                        <textarea id="regAllergies" rows="3"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="List any known allergies"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Chronic Illness / Past Surgical History</label>
+                        <textarea id="regChronicIllness" rows="3"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="List chronic conditions or past surgeries"></textarea>
+                    </div>
+                    
+                    <div class="md:col-span-2 flex justify-end space-x-4">
+                        <button type="button" id="cancelRegBtn" 
+                                class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>Register Patient
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -178,9 +194,17 @@ class AdminDashboard {
             this.searchPatients();
         });
 
-        // New patient button
         document.getElementById('newPatientBtn').addEventListener('click', () => {
-            this.showRegistrationForm();
+            this.showRegistrationModal();
+        });
+
+        // Register from search button
+        document.getElementById('registerFromSearch').addEventListener('click', () => {
+            this.showRegistrationModal();
+        });
+
+        document.getElementById('backToDashboard').addEventListener('click', () => {
+            this.resetDashboard();
         });
 
         // Patient registration form
@@ -189,43 +213,98 @@ class AdminDashboard {
             this.registerPatient();
         });
 
-        // Cancel registration buttons
-        document.getElementById('cancelRegBtn').addEventListener('click', () => {
-            this.hideRegistrationForm();
+        document.getElementById('closeModal').addEventListener('click', () => {
+            this.hideRegistrationModal();
         });
         
-        document.getElementById('cancelRegBtn2').addEventListener('click', () => {
-            this.hideRegistrationForm();
+        document.getElementById('cancelRegBtn').addEventListener('click', () => {
+            this.hideRegistrationModal();
         });
+
+        // Close modal when clicking outside
+        document.getElementById('registrationModal').addEventListener('click', (e) => {
+            if (e.target.id === 'registrationModal') {
+                this.hideRegistrationModal();
+            }
+        });
+    }
+
+    resetDashboard() {
+        document.getElementById('searchResults').classList.add('hidden');
+        document.getElementById('patientPhone').value = '';
     }
 
     searchPatients() {
         const phone = document.getElementById('patientPhone').value.trim();
-        const name = document.getElementById('patientName').value.trim();
 
-        if (!phone && !name) {
-            showAlert('Please enter at least a phone number', 'error');
+        if (!phone) {
+            showAlert('Please enter a phone number', 'error');
             return;
         }
 
-        // Redirect to search results page with parameters
-        const params = new URLSearchParams();
-        if (phone) params.append('phone', phone);
-        if (name) params.append('name', name);
-        
-        window.location.href = `/admin/search-results?${params.toString()}`;
+        this.searchByPhone(phone);
     }
 
-    showRegistrationForm() {
+    async searchByPhone(phone) {
+        try {
+            const response = await fetch('/api/patients/by-phone', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ phone: phone })
+            });
+            const data = await response.json();
+
+            const searchResults = document.getElementById('searchResults');
+            const patientsList = document.getElementById('patientsList');
+            const noPatientFound = document.getElementById('noPatientFound');
+            const registerOption = document.getElementById('registerOption');
+
+            searchResults.classList.remove('hidden');
+
+            if (data.success && data.patients && data.patients.length > 0) {
+                // Display patients
+                patientsList.innerHTML = data.patients.map(patient => `
+                    <div class="border rounded-lg p-4 mb-3 hover:bg-gray-50">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="font-medium text-gray-900">${patient.name}</h4>
+                                <p class="text-sm text-gray-600">ID: ${patient.patient_id}</p>
+                                <p class="text-sm text-gray-600">Age: ${patient.age || 'N/A'}</p>
+                            </div>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                    onclick="window.location.href='/admin/departments?patient_id=${patient._id}'">
+                                Check In
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                patientsList.classList.remove('hidden');
+                noPatientFound.classList.add('hidden');
+                registerOption.classList.remove('hidden');
+            } else {
+                // No patients found
+                patientsList.classList.add('hidden');
+                noPatientFound.classList.remove('hidden');
+                registerOption.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            showAlert('Error searching patients', 'error');
+        }
+    }
+
+    showRegistrationModal() {
         // Pre-fill phone if available
         const phone = document.getElementById('patientPhone').value;
         if (phone) document.getElementById('regPhone').value = phone;
 
-        document.getElementById('registrationForm').classList.remove('hidden');
+        document.getElementById('registrationModal').classList.remove('hidden');
     }
 
-    hideRegistrationForm() {
-        document.getElementById('registrationForm').classList.add('hidden');
+    hideRegistrationModal() {
+        document.getElementById('registrationModal').classList.add('hidden');
         document.getElementById('patientRegForm').reset();
     }
 
@@ -253,7 +332,7 @@ class AdminDashboard {
             const data = await response.json();
 
             if (data.success) {
-                this.hideRegistrationForm();
+                this.hideRegistrationModal();
                 showAlert('Patient registered successfully', 'success');
                 
                 // Redirect to departments page for the new patient
